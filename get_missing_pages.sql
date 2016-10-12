@@ -111,6 +111,7 @@ begin
       lost_pages := '';
       for ndx in rc_page_list (v_version_id := rec_test_list.version_id,
                                v_student_id := rec_test_list.student_id)
+      --- Формируем список потерянных листов	
       loop
         if (length(lost_pages) > 0) then
           lost_pages := lost_pages || ', ';
@@ -122,9 +123,10 @@ begin
                rec_test_list.test_id, rec_test_list.version_id, rec_test_list.student_id, page_in_test, put_cnt, ndx.index;
 
       end loop;
-
-      student_id = rec_test_list.student_id;
-      test_id = rec_test_list.test_id;
+      
+      --- возвращаем новую строку с данными о потерях
+      student_id   = rec_test_list.student_id;
+      test_id      = rec_test_list.test_id;
       version_name = rec_test_list.test_name;
       lost_page_indices = lost_pages;
 
@@ -139,7 +141,7 @@ language 'plpgsql' volatile
 
 /*  
   
--- Тестовые хзапуски
+-- Тестовые запуски
 select * from get_missing_pages(1) t;
 select * from get_missing_pages() t;
 
