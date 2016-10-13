@@ -1,24 +1,8 @@
-﻿/**
- * \descr Возвращает таблицу учащихся, пройденных ими тестов и потерянных (несданых) листов с заданиями
- * \author Bykov A.
- * \version 1.0
- */
-create or replace function get_missing_pages (
-        _test_id int default null
-)
-
-returns table (
-    student_id        int,
-    test_id           int,
-    version_name      char,
-    lost_page_indices text
-)
-
-as $$
-declare
-  rec record;
-
-  rc_out_data cursor for
+﻿  /*
+   * Второй вариант. Запрос длиннее, но план у запроса лучше - 
+   * функция построения списка потерянных страниц срабатывает, только если 
+   * страницы действительно потеряны, а таких студентов, по логике, должно быть меньшинство. 
+   */
   with put_pages as
   (
         select v.id            as version_id
@@ -47,8 +31,8 @@ declare
                    and p.version_id = v.id
                  group by v.id
                          ,v.test_id
-                         ,v.name
-  )
+                         ,v.name      
+  )      
   select pp.version_id
         ,pp.test_id
         ,pp.version_name
@@ -56,7 +40,7 @@ declare
         ,pp.cnt_put
         ,tt.cnt_tot
         ,case
-           when pp.cnt_put <> tt.cnt_tot then
+           when pp.cnt_put <> tt.cnt_tot then 
               (select array_to_string(ARRAY(
                               select p.index
                                 from versions v
@@ -72,9 +56,9 @@ declare
                                          and spx.page_id = px.id
                                          and px.version_id = v.id
                                          and spx.student_id = pp.student_id
-                                 )
+                                 )	
                           ), ',')
-              )
+              )            
            else ''
          end as lst
     from put_pages pp
@@ -85,26 +69,3 @@ declare
      and ( pp.test_id = _test_id or _test_id is null )
    order by pp.student_id
            ,pp.test_id;
-begin
-  for rec in rc_out_data loop
-    if length(rec.lst) >  0 then
-      student_id := rec.student_id;
-      test_id    := rec.test_id;
-      version_name := rec.version_name;
-      lost_page_indices := rec.lst;
-      return next;
-    end if;
-  end loop;
-
-end;
-$$
-language 'plpgsql' volatile
-
-
-/*
-
--- Тестовые хзапуски
-select * from get_missing_pages(1) t;
-select * from get_missing_pages() t;
-
-*/
