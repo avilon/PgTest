@@ -18,9 +18,9 @@ as $$
 declare
   rec record;
 
-  rc_out_data cursor for
+  rc_out_data cursor for  
   with put_pages as
-  (
+  (     --- Тесты, учащиеся, которые их сдавали и количество сданых страниц
         select v.id            as version_id
               ,v.test_id       as test_id
               ,v.name          as version_name
@@ -37,17 +37,18 @@ declare
                 ,v.name
                 ,sp.student_id
   ), tot_pages as (
-                select v.id        as version_id
-                      ,v.test_id   as test_id
-                      ,v.name      as test_name
-                      ,count(*)    as cnt_tot
-                  from versions v
-                      ,pages    p
-                 where 1 = 1
-                   and p.version_id = v.id
-                 group by v.id
-                         ,v.test_id
-                         ,v.name
+        --- Общее количество страниц в тесте  
+        select v.id        as version_id
+              ,v.test_id   as test_id
+              ,v.name      as test_name
+              ,count(*)    as cnt_tot
+          from versions v
+              ,pages    p
+         where 1 = 1
+           and p.version_id = v.id
+         group by v.id
+                 ,v.test_id
+                 ,v.name
   )
   select pp.version_id
         ,pp.test_id
@@ -57,6 +58,8 @@ declare
         ,tt.cnt_tot
         ,case
            when pp.cnt_put <> tt.cnt_tot then
+              --- Построение списка потерянных листов
+			  --- TODO: вынести в отдельную функцию (?)
               (select array_to_string(ARRAY(
                               select p.index
                                 from versions v
@@ -75,6 +78,7 @@ declare
                                  )
                           ), ',')
               )
+           ---------
            else ''
          end as lst
     from put_pages pp
